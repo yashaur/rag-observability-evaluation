@@ -1,0 +1,32 @@
+# requirements.txt — rag-eval-observability (THIS repo)
+#
+# Core dependencies for the eval harness + optional dashboard. The observability hook
+# lives in the SEPARATE `personal-rag-system` repo and is NOT installed here.
+#
+# ⚠️  VERSION CAUTION (ARCHITECTURE §12):
+#   - Langfuse had a v2 → v3 breaking rewrite (handler import path + score creation API).
+#     This project targets the v3 SDK; verify signatures against the installed version.
+#   - RAGAS had a ≤0.1 → 0.2+ breaking rewrite (EvaluationDataset / evaluate() API).
+#     This project targets 0.2+; verify signatures against the installed version.
+#   - The local .venv is Python 3.14. Several ML deps may not yet ship 3.14 wheels —
+#     if installs fail, pin to a supported Python (3.11/3.12) for this repo.
+#
+# Versions are left loose on purpose; pin them once you confirm what installs cleanly,
+# then commit the resolved set.
+
+# --- Evaluation ---
+ragas>=0.2            # offline RAGAS metrics (faithfulness, relevancy, precision, recall, correctness)
+
+# --- Observability backend SDK (read/write Langfuse) ---
+langfuse>=3.0         # v3 Python SDK — datasets, dataset runs, scores
+
+# --- LLM / judge plumbing (local Ollama) ---
+langchain>=0.3        # RAGAS judge/embeddings are wrapped via LangChain
+langchain-ollama>=0.2 # local Ollama judge + embeddings
+
+# --- Eval harness HTTP client + data handling ---
+requests>=2.31        # POST questions to the RAG API over HTTP
+pandas>=2.0           # aggregate results locally; data source for the optional dashboard
+
+# --- Optional dashboard (Phase 6) ---
+streamlit>=1.30       # only needed if/when you build dashboard/app.py

@@ -1,0 +1,3 @@
+# Eval run history lands here as <timestamp>_<version>.json (and optional .csv).
+# These are version-controlled (ARCHITECTURE §7.2) — the durable, Langfuse-independent
+# record of each run, and the data source for the optional dashboard.

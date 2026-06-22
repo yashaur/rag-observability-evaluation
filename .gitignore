@@ -1,0 +1,34 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+infra/langfuse/.env
+
+# --- Eval artifacts ---
+# NOTE: eval results are intentionally version-controlled (ARCHITECTURE §7.2) — they are
+# the durable, Langfuse-independent record of each run. So they are NOT ignored here.
+# If you ever want to stop tracking them, uncomment:
+#   evals/results/*.json
+#   evals/results/*.csv
+#   !evals/results/.gitkeep
+
+# --- Langfuse self-host volumes (if mounted locally) ---
+infra/langfuse/data/
+infra/langfuse/volumes/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,27 @@
+# infra/langfuse/docker-compose.yml — PLACEHOLDER (Phase 0)
+#
+# Self-hosted Langfuse, owned by THIS repo (ARCHITECTURE §5, §11 Phase 0).
+# This is plumbing ("you write directly", CLAUDE.md §4) — left as a placeholder until
+# Phase 0 so the structure exists now without committing to a stack you haven't booted.
+#
+# ── DECISION (ARCHITECTURE §5) ────────────────────────────────────────────────
+#   Default: Langfuse v3 via the OFFICIAL docker-compose (current/maintained;
+#            Web + Worker + Postgres + ClickHouse + Redis + S3/MinIO — still one command).
+#   Fallback: v2 Postgres-only if RAM is tight (comfortably < ~1 GB). This project needs
+#             nothing v2 lacks; the harness/dashboard read via the SDK, so the v2/v3
+#             choice never touches our code — only this file.
+#
+# ── TO POPULATE (Phase 0) ─────────────────────────────────────────────────────
+#   1. Fetch the official v3 compose for the version you want to pin:
+#        https://github.com/langfuse/langfuse  (docker-compose.yml)
+#   2. Paste it here (or `include:` it) and point it at ./.env (see .env.example).
+#   3. `docker compose up -d`  →  open http://localhost:3000
+#   4. Create a project → copy the public + secret API keys → put them in:
+#        - this repo's env (eval harness / dashboard)
+#        - the RAG repo's env (observability hook)
+#   5. Register the Ollama model with illustrative input/output pricing (Phase 2, §6.4)
+#      so cost panels populate.
+#
+# Verify: UI reachable at :3000 and the API keys are in hand (Phase 0 "done when").
+
+# (intentionally empty — replace with the official compose in Phase 0)

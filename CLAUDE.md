@@ -21,7 +21,7 @@ Everything below was discussed and explicitly decided. A future session should t
 | 7 | RAG API already returns retrieved contexts | **Yes** → the RAG repo needs **zero** changes for evaluation. The only code that lands in the RAG repo is the observability hook. |
 | 8 | Instrumentation path | **Native Langfuse callback** (not OpenTelemetry). OTel is a deliberate future learning exercise, not part of this build. |
 | 9 | Streaming | RAG app has a **streaming on/off toggle.** Live traffic uses whatever it's set to; latency capture adapts (true TTFT when streaming, Ollama-derived proxy when not). The **eval harness is pinned to non-streaming** for comparable runs. |
-| 10 | Observability backend | **Self-hosted Langfuse** (MIT; stays open-source post the Jan 2026 ClickHouse acquisition), owned by *this* repo, shared with the RAG app via env vars. |
+| 10 | Observability backend | **Self-hosted Langfuse v3, run locally** (MIT; stays open-source post the Jan 2026 ClickHouse acquisition), owned by *this* repo, shared with the RAG app via env vars. *Settled 2026-06: v3-local chosen over Cloud-v3 and over v2 — the goal is hands-on familiarity with the v3 architecture (web+worker+Postgres+ClickHouse+Redis+MinIO); Cloud hides it, v2 is the legacy line. 16 GB RAM trade accepted.* |
 | 11 | Eval library | **RAGAS.** |
 | 12 | RAGAS judge | **Local Ollama** by default (free, fully self-hosted), accepting some judge jitter. Hosted judge is an option if stabler numbers are ever wanted. |
 

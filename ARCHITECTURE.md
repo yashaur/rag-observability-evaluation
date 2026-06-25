@@ -83,6 +83,8 @@ Your existing API already returns `retrieved_contexts`, so it conforms today. Do
 
 **Decision:** start on **v3 via the official docker-compose** — current, maintained, batteries-included (so "more services" is still one command). Drop to **v2 Postgres-only** if RAM is tight or you want the fewest moving parts; this project needs nothing v2 lacks.
 
+> **Settled 2026-06 (no longer a dial):** committed to **v3, self-hosted locally** — explicitly over Cloud-v3 (which hides the very architecture we want to learn) and over v2 (legacy line). The RAM trade is accepted (16 GB is Langfuse's documented minimum; this machine is a 16 GB fanless Air also running Ollama — mitigations in the Phase 0 plan). Implemented in `infra/langfuse/docker-compose.yml` (adapted from upstream: fail-fast secrets, derived `DATABASE_URL`/S3 creds, per-service annotations).
+
 > **Insulation:** the harness and optional dashboard read through the **Langfuse Python SDK**, never raw ClickHouse/Postgres — so the v2/v3 choice never touches our code, only the compose file.
 
 ### Essentials
@@ -305,7 +307,7 @@ rag-eval-observability/
 ## 13. Revisitable defaults (sensible now, easy to change later — not blockers)
 
 These are chosen defaults, not open questions; flagged only so you know where the easy dials are.
-1. **Langfuse v3 vs v2** (§5) — v3 default; drop to v2 if RAM-constrained.
+1. ~~**Langfuse v3 vs v2** (§5) — v3 default; drop to v2 if RAM-constrained.~~ **RESOLVED 2026-06: v3 self-hosted locally** (see §5 note). No longer a dial.
 2. **Judge: local vs hosted** (§7.4) — local Ollama default; switch the judge alone to hosted for stabler metrics if wanted.
 3. **Custom dashboard** (§8) — deferred to Phase 6; likely a thin eval-trend page at most.
 4. **Golden-set size** (§7.1) — ~25 to start; grow deliberately (and reset comparisons when you do).

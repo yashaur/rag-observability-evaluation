@@ -53,9 +53,11 @@ ARCHITECTURE.md   technical blueprint — the what-to-build
 ## Quickstart (once built)
 
 ```bash
-# Phase 0 — self-host Langfuse
-cp infra/langfuse/.env.example infra/langfuse/.env   # then fill in secrets + keys
-docker compose -f infra/langfuse/docker-compose.yml up -d   # UI at http://localhost:3000
+# Phase 0 — self-host Langfuse v3 (6 services: web, worker, postgres, clickhouse, redis, minio)
+cp infra/langfuse/.env.example infra/langfuse/.env       # then generate secrets (openssl rand -hex 32)
+docker compose --env-file infra/langfuse/.env -f infra/langfuse/docker-compose.yml up -d
+# wait ~2-3 min for langfuse-web to log "Ready", then open http://localhost:3000,
+# create a project, copy the API keys back into infra/langfuse/.env
 
 # Eval deps
 pip install -r requirements.txt
@@ -66,11 +68,13 @@ python evals/run_eval.py --api http://localhost:8000/chat --version "<git_sha>-<
 
 ## Status
 
-Skeleton scaffolded per ARCHITECTURE.md §10. The `evals/` Python files and the observability
-hook are **stubs** by design — they are written guide-then-review (see `guides/`) as part of
-the learning goal. Infra and dashboard are placeholders filled in their phases.
+Skeleton scaffolded per ARCHITECTURE.md §10. **Phase 0 infra is ready**: `infra/langfuse/`
+holds an adapted official **Langfuse v3** compose (six services) + `.env.example` — boot it
+with the Quickstart above. The `evals/` Python files and the observability hook remain
+**stubs** by design — written guide-then-review (see `guides/`) as part of the learning goal.
 
 ## Stack
 
-Self-hosted Langfuse (MIT) · RAGAS · LangChain · local Ollama (LLM + judge, real cost $0;
+Self-hosted **Langfuse v3** (MIT; full 6-service stack — chosen for hands-on architecture
+learning, see ARCHITECTURE §5) · RAGAS · LangChain · local Ollama (LLM + judge, real cost $0;
 cost is an illustrative demonstration metric only). All free, open-source, self-hosted.

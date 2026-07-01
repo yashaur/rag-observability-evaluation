@@ -26,4 +26,6 @@ the mechanism, not just wire up the tool.
 ## Guides expected (rough order, per ARCHITECTURE §11)
 
 - `observability-hook.md` — Phase 1 (lands in the RAG repo)
+- `evaluation-concepts.md` — primer (read before Phase 3/4): the eval process, components, and how RAGAS works
+- `golden-set.md` — Phase 3 (authoring the fixed `golden_set.jsonl`; "you author, I review coverage")
 - `eval-harness.md` — Phase 4 (the `evals/` runner, RAGAS setup, metrics, Langfuse sync)

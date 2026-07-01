@@ -76,5 +76,7 @@ with the Quickstart above. The `evals/` Python files and the observability hook 
 ## Stack
 
 Self-hosted **Langfuse v3** (MIT; full 6-service stack — chosen for hands-on architecture
-learning, see ARCHITECTURE §5) · RAGAS · LangChain · local Ollama (LLM + judge, real cost $0;
-cost is an illustrative demonstration metric only). All free, open-source, self-hosted.
+learning, see ARCHITECTURE §5) · RAGAS · LangChain · local Ollama (RAG generator + embeddings,
+real cost $0; cost is an illustrative demonstration metric only) · a **hosted frontier judge**
+(GPT/Claude) for reliable RAGAS scores. Mostly free & self-hosted — the judge is the one
+deliberate hosted exception (ARCHITECTURE §7.4); a local-Ollama judge stays a free fallback.

@@ -23,7 +23,7 @@ Everything below was discussed and explicitly decided. A future session should t
 | 9 | Streaming | RAG app has a **streaming on/off toggle.** Live traffic uses whatever it's set to; latency capture adapts (true TTFT when streaming, Ollama-derived proxy when not). The **eval harness is pinned to non-streaming** for comparable runs. |
 | 10 | Observability backend | **Self-hosted Langfuse v3, run locally** (MIT; stays open-source post the Jan 2026 ClickHouse acquisition), owned by *this* repo, shared with the RAG app via env vars. *Settled 2026-06: v3-local chosen over Cloud-v3 and over v2 — the goal is hands-on familiarity with the v3 architecture (web+worker+Postgres+ClickHouse+Redis+MinIO); Cloud hides it, v2 is the legacy line. 16 GB RAM trade accepted.* |
 | 11 | Eval library | **RAGAS.** |
-| 12 | RAGAS judge | **Local Ollama** by default (free, fully self-hosted), accepting some judge jitter. Hosted judge is an option if stabler numbers are ever wanted. |
+| 12 | RAGAS judge | **Hosted frontier model** (GPT or Claude), pinned to a dated snapshot — judge quality is the eval's whole point, and a frontier model is stabler (less jitter) with reliable structured output. **Embeddings stay local Ollama.** Local-Ollama judge remains a free fallback. *Settled 2026-07: hosted judge chosen over local; its real per-run API cost is accepted and kept distinct from the illustrative generator-cost metric (#3). RAG generator, observability, embeddings, and infra all stay local.* |
 
 ## 1. The project idea
 
@@ -51,7 +51,7 @@ See ARCHITECTURE.md §3–§4 for the full design and the contract.
 - Log 100% of real usage to self-hosted Langfuse, multi-turn chats grouped into sessions, every trace tagged with the RAG version and the streaming mode.
 - Detailed performance metrics: tokens, TTFT, TPOT, TPS, latencies, plus an illustrative cost figure.
 - A repeatable fixed-input eval producing comparable metrics across versions, with regressions surfaced clearly.
-- Everything **free, open-source, self-hosted** (Langfuse MIT; RAGAS open; judge can be local Ollama).
+- **Mostly** free, open-source, self-hosted (Langfuse MIT; RAGAS open; RAG generator + embeddings + infra all local) — with **one deliberate exception: the RAGAS judge is a hosted frontier model** (§0 #12) for score reliability. A local-Ollama judge stays available as a free fallback.
 - A clean, **portfolio-quality** project — good README, coherent architecture story ("a RAG-agnostic eval & observability harness").
 - Treat this as a **learning project**: understand the mechanisms, not just wire up tools.
 
@@ -89,7 +89,7 @@ Carried over from the RAG build, applied across the two repos.
 - **Talk to the RAG system only over HTTP.** Never import its code. This is what makes it swappable and keeps the two repos decoupled.
 - **Keep the golden set fixed and version-controlled.** Changing it resets historical comparisons.
 - **Tag every eval run with the RAG version** (git SHA + short description), and **tag live traces with version + streaming mode**.
-- **Account for LLM-judge jitter.** RAGAS scores wobble run-to-run; look for consistent movement across the set, re-run borderline evals 2–3×, trust trends over single numbers.
+- **Account for LLM-judge jitter.** RAGAS scores wobble run-to-run (a hosted judge *reduces* this but doesn't remove it); look for consistent movement across the set, re-run borderline evals 2–3×, trust trends over single numbers.
 - **Pin the eval harness to non-streaming** (answers are identical to streaming, so RAGAS scores are mode-invariant; non-streaming gives the cleanest latency/timing data).
 - **Lean on Langfuse's built-in UI first** for monitoring and eval-run comparison; build custom only where it adds value.
 - **Keep the cost assumption as Langfuse config**, labeled illustrative, modeled on a real model's input/output prices.

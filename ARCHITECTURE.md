@@ -9,7 +9,7 @@
 | Fact | Value | Consequence |
 |---|---|---|
 | RAG framework | **LangChain** | Use the native Langfuse LangChain `CallbackHandler`. |
-| LLM | **Local Ollama** | Real cost \$0 → cost is a *demonstration* metric (§6.4). Judge can be local too (§7.4). |
+| LLM | **Local Ollama** (RAG generator) | Real cost \$0 → cost is a *demonstration* metric (§6.4). **The RAGAS judge, by contrast, is a hosted model** (§7.4); embeddings stay local. |
 | RAG API | FastAPI, `app.main:app`, port 8000 | The eval harness POSTs to it over HTTP. |
 | **API returns retrieved contexts** | **Yes** | **No change needed in the RAG repo for evaluation.** The harness gets answer + contexts from the existing response. |
 | Retrieval | Hybrid: BM25 (rebuilt in-memory via `refresh()`, not persisted) + vector | Eval-over-HTTP uses the already-warm BM25 of the running server; a direct import would start cold. |
@@ -43,7 +43,7 @@ Two code paths (online callback vs. offline batch), one Langfuse store. Live tra
 │  evals/run_eval.py  (offline, on-demand, non-streaming)    │   │                              │
 │    1. load fixed golden_set.jsonl                          │   │   TRACES (observations,      │
 │    2. POST each Q ──► RAG API ──► answer + contexts ───────┼──►│    grouped into sessions,    │
-│    3. RAGAS scores (local Ollama judge + embeddings)       │   │    + custom latency scores)  │
+│    3. RAGAS scores (hosted judge + local embeddings)       │   │    + custom latency scores)  │
 │    4. push DATASET RUN, run_name=<git_sha>-<desc> ─────────┼──►│   SCORES on a Dataset Run    │
 │    5. write evals/results/<ts>_<version>.json              │   │    (1 item/Q, 1 score/metric)│
 │                                                            │   └──────────────┬──────────────┘
@@ -167,7 +167,7 @@ on_llm_end:        md = response_metadata   # ns fields from Ollama:
 > **TTFT only exists for real when streaming.** With the toggle on, we timestamp the first streamed token (true TTFT); with it off, there is no "first token" moment, so we use Ollama's `load_duration + prompt_eval_duration` as the proxy. Either way all four perf metrics are available; only TTFT's fidelity differs. The mode tag lets you tell them apart (and compare streaming vs. non-streaming profiles if you ever want).
 
 ### 6.4 Cost as a demonstration metric
-Real cost is \$0 (local). To still show a meaningful cost panel: register a **custom model** in Langfuse's model-pricing config with **separate input and output prices** modeled on a real model (output typically 2–5× input), e.g. *illustrative* GPT-4o-mini-style rates ≈ \$0.15 / 1M input, \$0.60 / 1M output. Langfuse then computes and aggregates cost automatically on every trace — no arithmetic in your app. Label it clearly as hypothetical pricing. This demonstrates understanding of the cost model (two-sided, per-token) without claiming real numbers.
+Real cost is \$0 (local). To still show a meaningful cost panel: register a **custom model** in Langfuse's model-pricing config with **separate input and output prices** modeled on a real model (output typically 2–5× input), e.g. *illustrative* GPT-4o-mini-style rates ≈ \$0.15 / 1M input, \$0.60 / 1M output. Langfuse then computes and aggregates cost automatically on every trace — no arithmetic in your app. Label it clearly as hypothetical pricing. This demonstrates understanding of the cost model (two-sided, per-token) without claiming real numbers. *Note: this illustrative figure covers the local **generator**; the hosted **judge** (§7.4) incurs a separate, **real** API cost — keep the two distinct (this panel is a demonstration; the judge spend is actual).*
 
 ## 7. Component 3 — Offline evaluation harness (THIS repo, `evals/`)
 
@@ -208,15 +208,18 @@ Coverage: **factual** (single-chunk), **multi-hop/synthesis** (several chunks), 
 Reference-free metrics (faithfulness, answer relevancy) can *also* run on sampled live traces later for online quality tracking — but the golden set is where clean before/after numbers come from. Hard IR metrics (Hit Rate@k, MRR) are an optional later add (custom function or LlamaIndex retrieval evaluators) **only if** you start tuning retrieval precisely and have labelled `ground_truth_contexts`.
 
 ### 7.4 Judge LLM + embeddings — `evals/ragas_setup.py`
-To stay fully self-hosted, wrap local models:
+**Hosted judge, local embeddings.** The judge drives metric quality, so it's a **hosted frontier model** (GPT or Claude), pinned to a dated snapshot. Embeddings have no jitter problem, so they **stay local Ollama**. Wrap both for RAGAS via LangChain:
 ```
 # SHAPE — verify against installed RAGAS version
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-judge = LangchainLLMWrapper(ChatOllama(model="<a-capable-local-model>"))
+# judge → hosted: pick ONE provider, pin a DATED snapshot, keep it fixed per comparison
+from langchain_openai import ChatOpenAI          # or: from langchain_anthropic import ChatAnthropic
+judge = LangchainLLMWrapper(ChatOpenAI(model="<dated-snapshot>", temperature=0))
+# embeddings → stay local Ollama:
 emb   = LangchainEmbeddingsWrapper(<your existing Ollama embeddings>)
 ```
-**Caveat:** judge quality drives metric quality; a small local model is noisier. Mitigations: use a *larger* Ollama model as judge than the generator, and accept some jitter; or, if you'll tolerate a small external cost for stabler numbers, point only the judge at a hosted model (the RAG app stays fully local). Be consistent within a comparison.
+**Why hosted:** metrics are only as good as the grader — a frontier model makes far better claim/relevance/NLI judgments, emits reliable structured output, and jitters less than a small local model. **Trade-offs (accepted):** a real (small) per-run API cost that scales with set size × metrics × reruns — keep it separate from the *illustrative* generator-cost metric (§6.4); your golden-set questions, answers, and retrieved KB chunks leave localhost; and provider model updates can drift the baseline, so **pin a dated snapshot** and keep the judge **fixed within any comparison**. **Fallback:** a *larger* local Ollama model keeps the judge \$0 at the cost of noisier numbers.
 
 ### 7.5 Push to Langfuse + the regression loop — `evals/langfuse_sync.py`
 - Upload the golden set once as a Langfuse **Dataset**.
@@ -260,7 +263,7 @@ rag-eval-observability/
 ├─ evals/                      # offline evaluation                              [guide-then-review]
 │  ├─ datasets/
 │  │  └─ golden_set.jsonl
-│  ├─ ragas_setup.py          # local Ollama judge + embeddings wrappers
+│  ├─ ragas_setup.py          # hosted judge + local Ollama embeddings wrappers
 │  ├─ metrics.py              # metric selection + custom refusal-correct check
 │  ├─ run_eval.py             # call API (non-streaming) → RAGAS → sync → save
 │  ├─ langfuse_sync.py        # dataset upload + run/score push
@@ -298,7 +301,7 @@ rag-eval-observability/
 | Ollama timing fields | `load_duration`, `prompt_eval_count`, `prompt_eval_duration`, `eval_count`, `eval_duration`, `total_duration` (ns). Read via `response_metadata`; verify names against `langchain-ollama` version. |
 | TTFT | True (stream on) vs. proxy `load_duration + prompt_eval_duration` (stream off). Tag the mode. |
 | Cost | Illustrative only — Langfuse model-pricing config, separate input/output prices, modeled on a real model. |
-| Judge LLM | Local Ollama default (some jitter) or hosted (stabler, small cost). Consistent per comparison. |
+| Judge LLM | **Hosted** frontier model (GPT/Claude), pinned to a dated snapshot — stabler, less jitter, small real cost; local Ollama = free fallback. Embeddings stay local. Consistent per comparison. |
 | Eval transport | HTTP, non-streaming, fixed golden set. No `--mode import` switch (unneeded complexity). |
 | BM25 `refresh()` | In-memory, not persisted → eval-over-HTTP uses the running server's warm index. |
 | Trace volume | Sparse → log 100%, no sampling. Eval adds ~25 traces/run. Trivial storage. |
@@ -308,7 +311,7 @@ rag-eval-observability/
 
 These are chosen defaults, not open questions; flagged only so you know where the easy dials are.
 1. ~~**Langfuse v3 vs v2** (§5) — v3 default; drop to v2 if RAM-constrained.~~ **RESOLVED 2026-06: v3 self-hosted locally** (see §5 note). No longer a dial.
-2. **Judge: local vs hosted** (§7.4) — local Ollama default; switch the judge alone to hosted for stabler metrics if wanted.
+2. ~~**Judge: local vs hosted** (§7.4) — local Ollama default; switch the judge alone to hosted.~~ **RESOLVED 2026-07: hosted judge** (GPT/Claude, dated snapshot) for score reliability; embeddings stay local; local-Ollama judge remains a free fallback. No longer a dial.
 3. **Custom dashboard** (§8) — deferred to Phase 6; likely a thin eval-trend page at most.
 4. **Golden-set size** (§7.1) — ~25 to start; grow deliberately (and reset comparisons when you do).
 

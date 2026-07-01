@@ -1,27 +1,31 @@
-"""ragas_setup.py — local Ollama judge + embeddings for RAGAS.
+"""ragas_setup.py — hosted judge + local Ollama embeddings for RAGAS.
 
 STUB (guide-then-review, CLAUDE.md §4). Implement after the build-guide; do not fill in
 the bodies yet.
 
-Purpose (ARCHITECTURE §7.4): keep evaluation fully self-hosted by wrapping local Ollama
-models as the RAGAS judge LLM and embeddings. Judge quality drives metric quality — a
-small local model is noisier, so prefer a *larger* Ollama model for the judge than the
-generator, and be consistent within a comparison.
+Purpose (ARCHITECTURE §7.4): the JUDGE is a hosted frontier model (GPT or Claude), pinned
+to a dated snapshot — judge quality drives metric quality, and a frontier model is stabler
+(less jitter) and follows RAGAS's structured-output format reliably. EMBEDDINGS stay local
+Ollama (no jitter problem, free). Pick ONE judge provider and keep it fixed within a
+comparison. A larger local Ollama judge remains a free fallback.
 
 SHAPE to verify against the installed RAGAS version (do not trust signatures blindly,
 ARCHITECTURE §12):
     from ragas.llms import LangchainLLMWrapper
     from ragas.embeddings import LangchainEmbeddingsWrapper
-    from langchain_ollama import ChatOllama, OllamaEmbeddings
+    from langchain_openai import ChatOpenAI         # judge (or langchain_anthropic.ChatAnthropic)
+    from langchain_ollama import OllamaEmbeddings    # embeddings stay local
 """
 
 from __future__ import annotations
 
 
 def get_judge():
-    """Return the RAGAS judge LLM (LangchainLLMWrapper around a capable local ChatOllama).
+    """Return the RAGAS judge LLM (LangchainLLMWrapper around a hosted frontier model).
 
-    TODO(guide): wrap ChatOllama(model="<capable-local-model>") in LangchainLLMWrapper.
+    TODO(guide): wrap ChatOpenAI / ChatAnthropic(model="<dated-snapshot>", temperature=0)
+    in LangchainLLMWrapper. Pin a dated snapshot; keep the provider/model fixed per
+    comparison. (A larger local ChatOllama remains a free fallback.)
     """
     raise NotImplementedError("guide-then-review: implement after the build-guide")
 

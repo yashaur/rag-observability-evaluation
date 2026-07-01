@@ -20,9 +20,11 @@ ragas>=0.2            # offline RAGAS metrics (faithfulness, relevancy, precisio
 # --- Observability backend SDK (read/write Langfuse) ---
 langfuse>=3.0         # v3 Python SDK — datasets, dataset runs, scores
 
-# --- LLM / judge plumbing (local Ollama) ---
+# --- LLM / judge plumbing (hosted judge + local Ollama embeddings) ---
 langchain>=0.3        # RAGAS judge/embeddings are wrapped via LangChain
-langchain-ollama>=0.2 # local Ollama judge + embeddings
+langchain-ollama>=0.2 # local Ollama embeddings (nomic-embed-text)
+langchain-openai>=0.2 # hosted judge (GPT); pin a dated snapshot
+# langchain-anthropic>=0.2  # hosted judge (Claude) — install whichever ONE provider you use
 
 # --- Eval harness HTTP client + data handling ---
 requests>=2.31        # POST questions to the RAG API over HTTP
